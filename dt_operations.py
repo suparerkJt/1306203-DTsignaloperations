@@ -381,10 +381,10 @@ const PROTOS={
           path:"M2 24 H38 M12 24 V6 M18 24 V12 M24 24 V16 M30 24 V19 M36 24 V21"},
     cos: {label:"cos(2πf/F<sub>s</sub>·n + φ)",
           path:"M2 14 H38 M5 14 V3 M11 14 V8.5 M17 14 V19.5 M23 14 V25 M29 14 V19.5 M35 14 V8.5"},
-    ramp:{label:"A − n,  0 ≤ n ≤ A",
-          path:"M2 24 H38 M10 24 V6 M16 24 V11 M22 24 V16 M28 24 V21"}
+    tent:{label:"Tent: A, then 2N − n",
+          path:"M2 24 H38 M8 24 V8 M14 24 V8 M20 24 V8 M26 24 V12 M32 24 V18"}
 };
-const PROTO_ORDER=["step","exp","cos","ramp"];
+const PROTO_ORDER=["step","exp","cos","tent"];
 
 const OPS={
     shift:{label:"Time shifting<br>x[n − n<sub>0</sub>]",
@@ -405,7 +405,8 @@ const PARAMS=[
     {g:"proto",p:"f",    label:"Frequency f (Hz)",             types:["cos"],   min:0,    max:1000,step:0.1},
     {g:"proto",p:"Fs",   label:"Sampling frequency F<sub>s</sub> (positive integer, Hz)", types:["cos"], min:1, max:10000, step:1, int:true},
     {g:"proto",p:"k",    label:"Phase factor k  (φ = k·π)",    types:["cos"],   min:-100, max:100, step:0.1},
-    {g:"proto",p:"A",    label:"Parameter A (integer)",        types:["ramp"],  min:1,    max:50,  step:1, int:true},
+    {g:"proto",p:"A",    label:"Amplitude A",                  types:["tent"],  min:-100, max:100, step:0.1},
+    {g:"proto",p:"N",    label:"Length N (positive integer)",  types:["tent"],  min:1,    max:50,  step:1, int:true},
     {g:"op",   p:"T0",   label:"Shift n<sub>0</sub> (integer)",types:["shift","combo"], min:-100, max:100, step:1, int:true},
     {g:"op",   p:"alpha",label:"Scale factor α (non-zero integer)", types:["scale","combo"], min:-10, max:10, step:1, int:true, nonzero:true}
 ];
@@ -414,7 +415,7 @@ const DESCS={
     step:"u[n] = 1 for n ≥ 0 and 0 for n &lt; 0."
 };
 
-const proto={type:"ramp", a:0.8, f:1, Fs:10, k:0, A:4};
+const proto={type:"tent", a:0.8, f:1, Fs:10, k:0, A:4, N:4};
 const op={type:"shift", T0:3, alpha:2};
 const isOn=(state,id)=>state.type===id;
 
@@ -620,7 +621,9 @@ function xBase(n){
     if(proto.type==="step")      v=n>=0?1:0;
     else if(proto.type==="exp")  v=n>=0?Math.pow(proto.a,n):0;       // a = 0 gives the unit impulse
     else if(proto.type==="cos")  v=Math.cos(2*Math.PI*proto.f/proto.Fs*n+proto.k*Math.PI);
-    else                         v=(n>=0&&n<=proto.A)?proto.A-n:0;
+    else if(n>=0&&n<proto.N)     v=proto.A;
+    else if(n>=proto.N&&n<2*proto.N) v=2*proto.N-n;
+    else                         v=0;
 
     return (Number.isFinite(v)&&Math.abs(v)<=1e15)?v:NaN;
 }
@@ -646,7 +649,7 @@ function protoEq(){
     if(proto.type==="exp")  return proto.a===0 ? "x[n] = δ[n]   (a = 0)"
                                                : "x[n] = ("+num(proto.a)+")ⁿ · u[n]";
     if(proto.type==="cos")  return "x[n] = cos(2π · "+num(proto.f)+"/"+proto.Fs+" · n"+phaseText()+")";
-    return "x[n] = "+proto.A+" − n   for 0 ≤ n ≤ "+proto.A+",   0 otherwise";
+    return "x[n] = "+num(proto.A)+" for 0 ≤ n < "+proto.N+";   "+(2*proto.N)+" − n for "+proto.N+" ≤ n < "+(2*proto.N)+";   0 otherwise";
 }
 
 function argText(){
@@ -673,7 +676,7 @@ function substituted(arg){
     if(proto.type==="exp")  return proto.a===0 ? "δ["+arg+"]"
                                                : "("+num(proto.a)+")^"+par+" · u["+arg+"]";
     if(proto.type==="cos")  return "cos(2π · "+num(proto.f)+"/"+proto.Fs+" · "+par+phaseText()+")";
-    return "("+proto.A+" − "+par+")   for 0 ≤ "+arg+" ≤ "+proto.A+",   0 otherwise";
+    return num(proto.A)+" for 0 ≤ "+arg+" < "+proto.N+";   ("+(2*proto.N)+" − "+par+") for "+proto.N+" ≤ "+arg+" < "+(2*proto.N)+";   0 otherwise";
 }
 
 function opName(){
