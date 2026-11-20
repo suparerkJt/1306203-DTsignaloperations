@@ -4,7 +4,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 st.set_page_config(
-    page_title="Time Operations on Discrete-Time Signals",
+    page_title="1306203/Time Operations on Discrete-Time Signals",
     layout="wide",
 )
 
@@ -303,7 +303,7 @@ html = r"""
 
 <button class="theme" id="theme">🌙 DARK MODE</button>
 
-<h2>Time Operations on a Discrete-Time Signal</h2>
+<h2>1306203 Signals & Systems: Time Operations on a Discrete-Time Signal</h2>
 <div class="subtitle">Choose a prototype x[n] and a time operation: shifting, reversal or scaling</div>
 
 <div class="layout">
